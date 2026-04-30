@@ -12,8 +12,8 @@ export class MinioService implements OnModuleInit {
   private minioClient: Minio.Client;
   private readonly logger = new Logger(MinioService.name);
 
-  private readonly bucketName: string = process.env.MINIO_BUCKET || 'tuapostille-uploads';
-  private readonly publicUrl: string = process.env.MINIO_PUBLIC_URL || 'https://s3-dev.tuapostille.com';
+  private readonly bucketName: string = process.env.MINIO_BUCKET || 'vetconect-uploads';
+  private readonly publicUrl: string = process.env.MINIO_PUBLIC_URL || 'http://localhost:9000';
 
   constructor() {
     if (!process.env.MINIO_ENDPOINT || !process.env.MINIO_ROOT_USER) {
@@ -45,7 +45,7 @@ export class MinioService implements OnModuleInit {
 
       await this.setBucketPublic(this.bucketName);
     } catch (error) {
-      this.logger.error(`Error configurando bucket MinIO: ${error.message}`);
+      this.logger.error(`Error configurando bucket MinIO: ${error}`);
     }
   }
 
@@ -85,7 +85,7 @@ export class MinioService implements OnModuleInit {
 
       return `${this.publicUrl}/${this.bucketName}/${filePath}`;
     } catch (error) {
-      this.logger.error(`Error subiendo archivo a MinIO: ${error.message}`);
+      this.logger.error(`Error subiendo archivo a MinIO: ${error}`);
       throw new InternalServerErrorException(
         'No se pudo completar la carga del archivo.',
       );
@@ -103,7 +103,7 @@ export class MinioService implements OnModuleInit {
       await this.minioClient.removeObject(this.bucketName, filePath);
       this.logger.log(`Archivo eliminado de MinIO: ${filePath}`);
     } catch (error) {
-      this.logger.error(`Error al eliminar archivo de MinIO: ${error.message}`);
+      this.logger.error(`Error al eliminar archivo de MinIO: ${error}`);
     }
   }
 }

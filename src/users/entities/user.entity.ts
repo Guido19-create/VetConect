@@ -10,6 +10,7 @@ import { Exclude } from 'class-transformer';
 import { RefreshToken } from '../../auth/entities/refresh-token.entity';
 import { RecoveryToken } from '../../auth/entities/recovery-token.entity';
 import { Optional } from '@nestjs/common';
+import { UserClinicRole } from '../../clinics/entities/user-clinic-role.entity';
 
 @Entity('users')
 export class User {
@@ -37,7 +38,7 @@ export class User {
   avatarURl?: string;
 
   @Column({ name: 'isActive', default: false })
-  isActive: string;
+  isActive: boolean;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
@@ -72,4 +73,7 @@ export class User {
 
   @OneToMany(() => RecoveryToken, (token) => token.user)
   recoveryTokens: RecoveryToken[];
+
+  @OneToMany(() => UserClinicRole, (userClinicRole) => userClinicRole.user)
+  clinicRoles: UserClinicRole[];
 }

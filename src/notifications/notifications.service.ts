@@ -36,37 +36,37 @@ export class NotificationsService {
   }
 
   async sendEmail(
-  to: string,
-  subject: string,
-  text: string,
-  html?: string,
-  attachments?: any[],
-  ip?: string,
-  metadata?: any,
-  userId?: string,
-) {
-  try {
-    const uniqueId = Date.now();
+    to: string,
+    subject: string,
+    text: string,
+    html?: string,
+    attachments?: any[],
+    ip?: string,
+    metadata?: any,
+    userId?: string,
+  ) {
+    try {
+      const uniqueId = Date.now();
 
-    const jobId = `mail:${to}:${uniqueId}`;
+      const jobId = `mail:${to}:${uniqueId}`;
 
-    return await this.queue.add(
-      'email',
-      { to, subject, text, html, attachments, ip, metadata, userId },
-      {
-        jobId, 
-        attempts: 3,
-        backoff: {
-          type: 'exponential',
-          delay: 5000,
+      return await this.queue.add(
+        'email',
+        { to, subject, text, html, attachments, ip, metadata, userId },
+        {
+          jobId,
+          attempts: 3,
+          backoff: {
+            type: 'exponential',
+            delay: 5000,
+          },
+          timeout: 15000,
+          removeOnComplete: true,
+          removeOnFail: false,
         },
-        timeout: 15000,
-        removeOnComplete: true, 
-        removeOnFail: false,   
-      },
-    );
-  } catch (error) {
-    this.logger.error('Error agregando correo a la cola Bull:', error);
+      );
+    } catch (error) {
+      this.logger.error('Error agregando correo a la cola Bull:', error);
+    }
   }
-}
 }

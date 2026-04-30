@@ -133,9 +133,11 @@ export class UsersService {
   }
 
   async remove(id: string): Promise<void> {
-    const user = await this.findOne(id);
-    await this.userRepository.remove(user);
+  const result = await this.userRepository.delete(id);
+  if (result.affected === 0) {
+    throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
   }
+}
 
   async findByEmail(email: string): Promise<User | null> {
     return this.userRepository.findOne({
@@ -154,6 +156,7 @@ export class UsersService {
 
   async findById(id: string): Promise<User | null> {
     const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) throw new NotFoundException('Usuario no encontrado')
     return user;
   }
 

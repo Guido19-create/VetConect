@@ -182,7 +182,7 @@ export class AuthService {
     return user;
   }
 
-  async logout(token: string,ip) {
+  async logout(token: string, ip) {
     try {
       const access_token = token.substring(7);
 
@@ -425,5 +425,33 @@ export class AuthService {
     ip: string,
   ): Promise<void> {
     await this.usersService.unlinkSocialAccount(userId, provider);
+  }
+
+  async deleteAccount(
+    userId: string,
+    password: string,
+  ): Promise<{ message: string }> {
+    const user = await this.usersService.findOne(userId);
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+
+    if (!user.password) {
+      throw new BadRequestException(
+        'Para eliminar una cuenta social, primero debe configurar una contraseña de seguridad.',
+      );
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException(
+        'La contraseña proporcionada es incorrecta. No se puede eliminar la cuenta.',
+      );
+    }
+
+    await this.usersService.remove(userId);
+
+    return {
+      message:
+        'Cuenta eliminada permanentemente. Todos los datos asociados han sido borrados de forma irreversible.',
+    };
   }
 }

@@ -10,6 +10,8 @@ import { AuthModule } from './auth/auth.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { EmailModule } from './mail/mail.module';
 import { OtpModule } from './otp/otp.module';
+import { ClinicsModule } from './clinics/clinics.module';
+import { RolesModule } from './roles/roles.module';
 
 @Module({
   imports: [
@@ -49,6 +51,8 @@ import { OtpModule } from './otp/otp.module';
     OtpModule,
     EmailModule,
     NotificationsModule,
+    ClinicsModule,
+    RolesModule,
   ],
   providers: [
     {

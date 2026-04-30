@@ -7,6 +7,7 @@ import {
   HttpStatus,
   HttpCode,
   Delete,
+  Req,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -39,6 +40,8 @@ import { LoginResponseDto } from './dto/login-response.dto';
 import { LoginFinalResponseDto } from './dto/login-response.dto';
 import { ClientIp } from '../common';
 import { CreateUserDto } from '../users/dto/create-user.dto';
+import { DeleteAccountDto } from '../users/dto/deleteAccount.dto';
+import { JwtAuthGuard } from './decorators/jwt.guard';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -520,5 +523,37 @@ export class AuthController {
       message: `Cuenta con ${provider} desvinculada exitosamente.`,
       provider: provider,
     };
+  }
+
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('delete-account')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ 
+    summary: 'Eliminar cuenta de usuario', 
+    description: 'Elimina permanentemente la cuenta del usuario autenticado. REQUIERE confirmación de contraseña. ADVERTENCIA: Esta acción es irreversible.' 
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Cuenta eliminada exitosamente.' 
+  })
+  @ApiResponse({ 
+    status: 401, 
+    description: 'Contraseña incorrecta o sesión inválida.' 
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Usuario no encontrado.' 
+  })
+  @ApiResponse({ 
+    status: 400, 
+    description: 'El usuario no tiene contraseña configurada (cuenta social sin password).' 
+  })
+  async deleteAccount(
+    @Req() req: any,
+    @Body() deleteAccountDto: DeleteAccountDto,
+  ) {
+    return await this.authService.deleteAccount(req.user.id, deleteAccountDto.password);
   }
 }
