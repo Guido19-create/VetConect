@@ -17,7 +17,7 @@ export class RolesSeeder implements OnApplicationBootstrap {
   }
 
   async run() {
-    const rolesToCreate = ['OWNER', 'ADMIN', 'VETERINARIAN', 'RECEPTIONIST','USER'];
+    const rolesToCreate = ['OWNER', 'ADMIN', 'VETERINARIAN', 'RECEPTIONIST','USER','SUPERADMIN'];
 
     this.logger.log('Iniciando el seeding de roles...');
 

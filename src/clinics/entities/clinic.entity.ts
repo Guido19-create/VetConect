@@ -1,8 +1,11 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
-import { Optional } from '@nestjs/common';
 import { UserClinicRole } from './user-clinic-role.entity';
 import { Service } from './service.entity';
+import { Pet } from '../../pets/entities/pet.entity';
+import { Appointment } from '../../appointments/entities/appointment.entity';
+import { Rating } from '../../ratings/entities/rating.entity';
+import { DailyAttendance } from '../../daily-attendance/entities/daily-attendance.entity';
 
 export enum ClinicPrivacy {
   PUBLIC = 'public',
@@ -17,9 +20,8 @@ export class Clinic {
   @Column({ unique: true })
   name: string;
 
-  @Column({type:'text',nullable:true})
-  @Optional()
-  logoURL?:string
+  @Column({ type: 'text', nullable: true })
+  logoURL?: string;
 
   @Column({ type: 'text', nullable: true })
   description: string;
@@ -41,17 +43,29 @@ export class Clinic {
   @JoinColumn({ name: 'ownerId' })
   owner: User;
 
-  @OneToMany(() => UserClinicRole, (userClinicRole) => userClinicRole.clinic,{
+  @Column()
+  ownerId: string;
+
+  @OneToMany(() => UserClinicRole, (userClinicRole) => userClinicRole.clinic, {
     cascade: true
   })
   userRoles: UserClinicRole[];
 
-  @Column()
-  ownerId: string;
+  @OneToMany(() => Pet, (pet) => pet.clinic)
+  pets: Pet[];
+
+  @OneToMany(() => Appointment, (appointment) => appointment.clinic)
+  appointments: Appointment[];
 
   @OneToMany(() => Service, (service) => service.clinic)
   services: Service[];
 
+  @OneToMany(() => Rating, (rating) => rating.clinic)
+  ratings: Rating[];
+
   @CreateDateColumn()
   createdAt: Date;
+
+  @OneToMany(() => DailyAttendance, (attendance) => attendance.clinic)
+  dailyAttentions: DailyAttendance[];
 }

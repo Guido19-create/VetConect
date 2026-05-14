@@ -5,12 +5,16 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  ManyToMany,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
 import { RefreshToken } from '../../auth/entities/refresh-token.entity';
 import { RecoveryToken } from '../../auth/entities/recovery-token.entity';
 import { Optional } from '@nestjs/common';
 import { UserClinicRole } from '../../clinics/entities/user-clinic-role.entity';
+import { Pet } from '../../pets/entities/pet.entity';
+import { Rating } from '../../ratings/entities/rating.entity';
+import { DailyAttendance } from '../../daily-attendance/entities/daily-attendance.entity';
 
 @Entity('users')
 export class User {
@@ -74,6 +78,15 @@ export class User {
   @OneToMany(() => RecoveryToken, (token) => token.user)
   recoveryTokens: RecoveryToken[];
 
-  @OneToMany(() => UserClinicRole, (userClinicRole) => userClinicRole.user)
+  @OneToMany(() => UserClinicRole, (userClinicRole) => userClinicRole.user, { eager: true })
   clinicRoles: UserClinicRole[];
+
+  @ManyToMany(() => Pet, (pet) => pet.owners)
+  pets: Pet[];
+
+  @OneToMany(() => Rating, (rating) => rating.user)
+  ratings: Rating[];
+
+  @OneToMany(() => DailyAttendance, (attendance) => attendance.user)
+  dailyAttentions: DailyAttendance[];
 }

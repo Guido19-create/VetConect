@@ -51,12 +51,12 @@ export class ClinicsService {
     }
 
     const ownerRole = await this.roleRepository.findOne({
-      where: { type: 'OWNER' },
+      where: { type: 'ADMIN' },
     });
 
     if (!ownerRole) {
       throw new InternalServerErrorException(
-        'Error de configuración: El rol OWNER no existe en la base de datos.',
+        'Error de configuración: El rol ADMIN no existe en la base de datos.',
       );
     }
 

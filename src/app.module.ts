@@ -12,6 +12,11 @@ import { EmailModule } from './mail/mail.module';
 import { OtpModule } from './otp/otp.module';
 import { ClinicsModule } from './clinics/clinics.module';
 import { RolesModule } from './roles/roles.module';
+import { PetsModule } from './pets/pets.module';
+import { AppointmentsModule } from './appointments/appointments.module';
+import { ConversationsModule } from './conversations/conversations.module';
+import { RatingsModule } from './ratings/ratings.module';
+import { DailyAttendanceModule } from './daily-attendance/daily-attendance.module';
 
 @Module({
   imports: [
@@ -53,6 +58,11 @@ import { RolesModule } from './roles/roles.module';
     NotificationsModule,
     ClinicsModule,
     RolesModule,
+    PetsModule,
+    AppointmentsModule,
+    ConversationsModule,
+    RatingsModule,
+    DailyAttendanceModule,
   ],
   providers: [
     {
