@@ -2,21 +2,26 @@ import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
+import { RedisIoAdapter } from './redis-io.adapter';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const logger = new Logger('VetConnect-Main');
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
 
   // 1. EL PREFIJO VA PRIMERO
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
 
   // 2. CONFIGURACIÓN DE VALIDACIÓN
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
 
   // 3. CONFIGURACIÓN DE SWAGGER
   const config = new DocumentBuilder()
@@ -36,23 +41,26 @@ async function bootstrap() {
     )
     .build();
 
-  // Generamos el documento
   const document = SwaggerModule.createDocument(app, config);
 
-  // 4. SETUP DE SWAGGER
-  // Usamos el mismo prefijo para la URL de la documentación
   SwaggerModule.setup(`${globalPrefix}/docs`, app, document, {
     swaggerOptions: {
-      docExpansion: 'list', // Esto hace que los módulos aparezcan desplegados
+      docExpansion: 'list',
       filter: true,
       showRequestDuration: true,
     },
   });
 
+const redisIoAdapter = new RedisIoAdapter(app, configService);
+  await redisIoAdapter.connectToRedis();
+  app.useWebSocketAdapter(redisIoAdapter);
+
   const port = process.env.PORT ?? 3000;
-  await app.listen(port,'0.0.0.0');
-  
+  await app.listen(port, '0.0.0.0');
+
   logger.log(`🚀 API corriendo en: http://localhost:${port}/${globalPrefix}`);
-  logger.log(`📝 Swagger disponible en: http://localhost:${port}/${globalPrefix}/docs`);
+  logger.log(
+    `📝 Swagger disponible en: http://localhost:${port}/${globalPrefix}/docs`,
+  );
 }
 bootstrap();

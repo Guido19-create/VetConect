@@ -15,6 +15,8 @@ import { UserClinicRole } from '../../clinics/entities/user-clinic-role.entity';
 import { Pet } from '../../pets/entities/pet.entity';
 import { Rating } from '../../ratings/entities/rating.entity';
 import { DailyAttendance } from '../../daily-attendance/entities/daily-attendance.entity';
+import { Conversation } from '../../conversations/entities/conversation.entity'; 
+import { Message } from '../../conversations/entities/message.entity';
 
 @Entity('users')
 export class User {
@@ -89,4 +91,14 @@ export class User {
 
   @OneToMany(() => DailyAttendance, (attendance) => attendance.user)
   dailyAttentions: DailyAttendance[];
+
+
+  @OneToMany(() => Conversation, (conversation) => conversation.user1)
+  conversationsAsPropietario: Conversation[];
+
+  @OneToMany(() => Conversation, (conversation) => conversation.user2)
+  conversationsAsVeterinario: Conversation[];
+
+  @OneToMany(() => Message, (message) => message.user)
+  messagesWritten: Message[];
 }
