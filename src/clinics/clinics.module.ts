@@ -10,6 +10,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { UsersModule } from '../users/users.module';
 import { MinioModule } from '../common/integrations/minio/minio.module';
 import { Service } from './entities/service.entity';
+import { ClinicSeedService } from './seeds/clinic.seed.service';
 
 @Module({
   imports: [
@@ -20,7 +21,7 @@ import { Service } from './entities/service.entity';
     MinioModule
   ],
   controllers: [ClinicsController],
-  providers: [ClinicsService],
+  providers: [ClinicsService,ClinicSeedService],
   exports: [TypeOrmModule],
 })
 export class ClinicsModule {} 

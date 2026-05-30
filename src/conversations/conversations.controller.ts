@@ -13,7 +13,6 @@ import {
   ParseFilePipe,
   UploadedFile,
   UseInterceptors,
-  BadRequestException
 } from '@nestjs/common';
 import { 
   ApiTags, 

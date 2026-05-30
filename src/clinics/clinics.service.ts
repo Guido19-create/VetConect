@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, ILike, Repository } from 'typeorm';
 import { Clinic, ClinicPrivacy } from './entities/clinic.entity';
 import { CreateClinicDto } from './dto/create-clinic.dto';
 import { UserClinicRole } from './entities/user-clinic-role.entity';
@@ -20,6 +20,7 @@ import { MinioService } from '../common/integrations/minio/minio.service';
 import { UpdateWorkingHoursDto } from './dto/update-working-hours.dto';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { Service } from './entities/service.entity';
+import { GetClinicsFilterDto } from './dto/get-clinics-filter.dto';
 
 @Injectable()
 export class ClinicsService {
@@ -40,6 +41,23 @@ export class ClinicsService {
     private readonly usersService: UsersService,
     private readonly minioService: MinioService,
   ) {}
+
+  // 🛠️ Función auxiliar privada para sanitizar y asegurar formato JSON antes de persistir en PostgreSQL
+  private parseWorkingHours(workingHours: any): any {
+    if (!workingHours) return null;
+
+    // Si el frontend envía un String plano
+    if (typeof workingHours === 'string') {
+      try {
+        // Intentamos ver si es un string JSON codificado (ej: '{"monday": "9am"}')
+        return JSON.parse(workingHours);
+      } catch (e) {
+        // Si es un texto común (ej: "Lunes a Viernes 08:00 - 17:00"), lo convertimos a un formato de objeto consistente
+        return { general: workingHours };
+      }
+    }
+    return workingHours;
+  }
 
   async create(createClinicDto: CreateClinicDto, ownerId: string) {
     const existingClinic = await this.clinicRepository.findOne({
@@ -65,8 +83,12 @@ export class ClinicsService {
     await queryRunner.startTransaction();
 
     try {
+      // Formateamos las horas antes de pasarlas a TypeORM
+      const formattedWorkingHours = this.parseWorkingHours((createClinicDto as any).workingHours);
+
       const clinic = queryRunner.manager.create(Clinic, {
         ...createClinicDto,
+        workingHours: formattedWorkingHours,
         ownerId,
       });
       const savedClinic = await queryRunner.manager.save(clinic);
@@ -323,6 +345,7 @@ export class ClinicsService {
         name: true,
         logoURL: true,
         description: true,
+        address: true,
         privacy: true,
         workingHours: true,
         isActive: true,
@@ -376,10 +399,18 @@ export class ClinicsService {
 
     if (!clinic) throw new NotFoundException('Clínica no encontrada');
 
-    clinic.workingHours = {
-      ...(clinic.workingHours || {}),
-      ...newHours,
-    };
+    // Parseamos lo que venga en el DTO por si se envía parcial en texto plano
+    const verifiedNewHours = this.parseWorkingHours(newHours);
+
+    // Si la base de datos ya tenía un objeto, los fusionamos limpiamente
+    if (clinic.workingHours && typeof clinic.workingHours === 'object' && !Array.isArray(clinic.workingHours)) {
+      clinic.workingHours = {
+        ...clinic.workingHours,
+        ...verifiedNewHours,
+      };
+    } else {
+      clinic.workingHours = verifiedNewHours;
+    }
 
     await this.clinicRepository.save(clinic);
 
@@ -471,4 +502,63 @@ export class ClinicsService {
     };
   }
 
+  async findAll(filterDto: GetClinicsFilterDto) {
+    const { name, address, page = 1, limit = 10 } = filterDto;
+
+    const whereConditions: any = { isActive: true };
+
+    if (name) {
+      whereConditions.name = ILike(`%${name}%`);
+    }
+
+    if (address) {
+      whereConditions.address = ILike(`%${address}%`);
+    }
+
+    const skip = (page - 1) * limit;
+
+    try {
+      const [clinics, total] = await this.clinicRepository.findAndCount({
+        where: whereConditions,
+        order: { createdAt: 'DESC' },
+        take: limit,
+        skip: skip,
+      });
+
+      const lastPage = Math.ceil(total / limit);
+
+      return {
+        data: clinics,
+        meta: {
+          total,
+          page,
+          limit,
+          lastPage: lastPage === 0 ? 1 : lastPage,
+        },
+      };
+    } catch (error) {
+      console.error('Error en findAndCount de clínicas:', error);
+      throw new InternalServerErrorException(
+        'Error al obtener el listado paginado de clínicas.',
+      );
+    }
+  }
+
+  async getServicesByClinic(clinicId: string): Promise<Service[]> {
+    const clinicExists = await this.clinicRepository.findOne({
+      where: { id: clinicId, isActive: true },
+      select: { id: true }, 
+    });
+
+    if (!clinicExists) {
+      throw new NotFoundException(
+        'La clínica solicitada no existe o está inactiva temporalmente.',
+      );
+    }
+
+    return await this.serviceRepository.find({
+      where: { clinicId },
+      order: { name: 'ASC' },
+    });
+  }
 }

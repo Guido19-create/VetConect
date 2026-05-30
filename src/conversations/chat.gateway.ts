@@ -14,6 +14,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../users/entities/user.entity';
 import { Repository } from 'typeorm';
 import { forwardRef, Inject, Logger } from '@nestjs/common';
+import { AppointmentsService } from '../appointments/appointments.service';
 
 // Interfaz extendida para guardar datos del usuario directamente en la instancia del socket
 interface AuthenticatedSocket extends Socket {
@@ -39,13 +40,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+
   ) {}
 
   async handleConnection(client: AuthenticatedSocket) {
     try {
       const userId = client.handshake.query.userId as string;
-
-      console.log('gcuwegpcpepwbecpu9w')
+      
       if (!userId) {
         this.logger.error('Conexión rechazada: No se proporcionó userId');
         client.disconnect();

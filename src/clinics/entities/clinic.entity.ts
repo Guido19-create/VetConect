@@ -26,6 +26,9 @@ export class Clinic {
   @Column({ type: 'text', nullable: true })
   description: string;
 
+  @Column({ type: 'text', nullable: true })
+  address: string;
+
   @Column({
     type: 'enum',
     enum: ClinicPrivacy,
@@ -34,7 +37,7 @@ export class Clinic {
   privacy: ClinicPrivacy;
 
   @Column({ type: 'jsonb', nullable: true })
-  workingHours: any;
+  workingHours: Record<string, string> | string[] | any;
 
   @Column({ default: true })
   isActive: boolean;

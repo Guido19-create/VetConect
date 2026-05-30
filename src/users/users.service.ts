@@ -141,8 +141,11 @@ export class UsersService {
 
   async findByEmail(email: string): Promise<User | null> {
     return this.userRepository.findOne({
-      where: { email },
-    });
+      where: { 
+        email,
+        isActive:true
+      },
+    }).catch(() => null);
   }
 
   async validatePassword(userId: string, password: string): Promise<boolean> {

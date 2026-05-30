@@ -3,8 +3,6 @@ import {
   Post,
   Body,
   Param,
-  Req,
-  UseGuards,
   HttpStatus,
   Patch,
   ParseUUIDPipe,
@@ -15,6 +13,7 @@ import {
   UploadedFile,
   FileTypeValidator,
   UseInterceptors,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -34,6 +33,8 @@ import { GetUser } from '../auth/decorators/get-user.decorator';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { User } from '../users/entities/user.entity';
 import { UpdateClinicPrivacyDto } from './dto/update-clinic-privacy.dto';
+import { GetClinicsFilterDto } from './dto/get-clinics-filter.dto';
+import { Public } from '../auth/decorators/public.decorator';
 
 @ApiTags('Clinics')
 @ApiBearerAuth()
@@ -59,8 +60,7 @@ export class ClinicsController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Datos de entrada inválidos.',
   })
-  async create(@Body() createClinicDto: CreateClinicDto, @Req() req: any) {
-    const userId = req.user.id;
+  async create(@Body() createClinicDto: CreateClinicDto, @GetUser('id') userId: string) {
     return await this.clinicsService.create(createClinicDto, userId);
   }
 
@@ -95,22 +95,22 @@ export class ClinicsController {
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Invitación enviada y encolada en Bull.',
+    description: 'Invitación enviada y encolada en el sistema.',
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: 'Clínica no encontrada.',
   })
   async invite(
-    @Param('id') clinicId: string,
-    @Body() inviteDto: { email: string; roleId: string; userId: string },
+    @Param('id', new ParseUUIDPipe()) clinicId: string,
+    @Body() inviteDto: { roleId: string; userId: string },
     @ClientIp() ip: string,
   ) {
     return await this.clinicsService.inviteMember(
       clinicId,
       inviteDto.roleId,
       inviteDto.userId,
-      inviteDto.email,
+      ip,
     );
   }
 
@@ -228,22 +228,22 @@ export class ClinicsController {
   async removeClinic(
     @Param('id', new ParseUUIDPipe()) clinicId: string,
     @Body('password') password: string,
-    @Req() req: any,
+    @GetUser('id') ownerId: string,
   ) {
-    const ownerId = req.user.id;
     return await this.clinicsService.deleteClinic(clinicId, ownerId, password);
   }
 
   @Get(':id')
+  @Public()
   @ApiOperation({
     summary: 'Obtener perfil detallado de la clínica (RF-CL-07)',
     description:
-      'Retorna toda la información pública de la clínica: descripción, horarios, servicios, ubicación y personal.',
+      'Retorna toda la información pública de la clínica: descripción, horarios, servicios, dirección/ubicación y personal.',
   })
   @ApiParam({ name: 'id', description: 'UUID de la clínica' })
   @ApiResponse({
     status: 200,
-    description: 'Datos detallados obtenidos con éxito.',
+    description: 'Datos detallados obtenidos con éxito (incluye la dirección).',
   })
   @ApiResponse({
     status: 404,
@@ -304,9 +304,10 @@ export class ClinicsController {
 
   @Patch(':id/working-hours')
   @ApiBody({
-    description: 'Estructura semanal de horarios de la clínica',
+    description: 'Estructura semanal de horarios de la clínica o texto plano genérico',
     examples: {
-      ejemploReal: {
+      ejemploEstructurado: {
+        summary: 'Formato de Objeto estructurado',
         value: {
           monday: { open: '08:00', close: '18:00', isClosed: false },
           sunday: { open: '00:00', close: '00:00', isClosed: true },
@@ -317,16 +318,15 @@ export class ClinicsController {
   @ApiOperation({
     summary: 'Configurar horarios de atención (RF-PE-02)',
     description:
-      'Define apertura, cierre y días de descanso por cada día de la semana.',
+      'Define apertura, cierre y días de descanso. El backend tolera tanto un objeto por días como un string plano.',
   })
   @ApiResponse({ status: 200, description: 'Horarios actualizados con éxito.' })
   @ApiResponse({ status: 404, description: 'Clínica no encontrada.' })
   async updateWorkingHours(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() updateWorkingHoursDto: UpdateWorkingHoursDto,
-    @Req() req: any,
+    @GetUser('id') ownerId: string,
   ) {
-    const ownerId = req.user.id;
     return await this.clinicsService.updateWorkingHours(
       id,
       updateWorkingHoursDto,
@@ -417,5 +417,94 @@ export class ClinicsController {
       user,
       updatePrivacyDto.privacy,
     );
+  }
+
+  @Get()
+  @Public()
+  @ApiOperation({
+    summary: 'Obtener catálogo de clínicas paginado y filtrado (RF-CL-08)',
+    description:
+      'Retorna una lista paginada de clínicas activas en el sistema. Permite aplicar filtros opcionales de búsqueda parcial por nombre o dirección.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Listado paginado obtenido con éxito.',
+    schema: {
+      example: {
+        data: [
+          {
+            id: '123e4567-e89b-12d3-a456-426614174000',
+            name: 'Veterinaria Huellitas',
+            description: 'Especialistas en cirugía menor y vacunas.',
+            address: 'Calle 10 #45, La Habana',
+            privacy: 'PUBLIC',
+            logoURL: 'https://minio.tudominio.com/logos/huellitas.png',
+            workingHours: {
+              monday: { open: '08:00', close: '17:00' },
+              tuesday: { open: '08:00', close: '17:00' },
+            },
+            isActive: true,
+            createdAt: '2026-05-26T00:00:00.000Z',
+          },
+        ],
+        meta: {
+          total: 15,
+          page: 1,
+          limit: 10,
+          lastPage: 2,
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description:
+      'Los parámetros de paginación o filtrado contienen datos inválidos.',
+  })
+  async findAll(@Query() filterDto: GetClinicsFilterDto) {
+    return await this.clinicsService.findAll(filterDto);
+  }
+
+  @Get(':id/services')
+  @Public()
+  @ApiOperation({
+    summary: 'Obtener servicios ofrecidos por una clínica',
+    description:
+      'Retorna la lista completa de servicios médicos y veterinarios registrados por una clínica específica mediante su UUID.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'UUID de la clínica de la cual se quieren obtener los servicios',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Lista de servicios obtenida exitosamente.',
+    schema: {
+      type: 'array',
+      items: {
+        example: {
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          name: 'Consulta General',
+          description: 'Evaluación primaria de la mascota',
+          duration: 30,
+          icon_URL: 'https://minio.tudominio.com/services/icono.png',
+          clinicId: '123e4567-e89b-12d3-a456-426614174000',
+          isActive: true,
+          createdAt: '2026-05-29T00:00:00.000Z',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'La clínica no existe o no se encuentra activa en el sistema.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'El ID proporcionado no es un UUID válido.',
+  })
+  async getClinicServices(@Param('id', new ParseUUIDPipe()) id: string) {
+    return await this.clinicsService.getServicesByClinic(id);
   }
 }

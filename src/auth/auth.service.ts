@@ -42,10 +42,11 @@ export class AuthService {
   async registerInit(dto: CreateUserDto, ip: string) {
     const email = dto.email;
     const existing = await this.usersService.findByEmail(email);
-
+    
     if (existing) throw new ConflictException('El usuario ya está registrado');
-
+    
     await this.usersService.register(dto);
+    console.log(existing)
 
     const otpDto: GenerateOtpDto = { email: dto.email, method: 'email' };
 
@@ -88,7 +89,9 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto, ip: string) {
+    console.log(loginDto.email)
     const user = await this.usersService.findByEmail(loginDto.email);
+    console.log(user)
     if (!user) throw new BadRequestException('Usuario no encontrado');
 
     if (user.isMfaEnabled) {
@@ -330,7 +333,7 @@ export class AuthService {
         'No se pudo enviar el correo de recuperación.',
       );
     }
-    return 'Recuperación procesada.';
+    return { message: 'Recuperación procesada.'};
   }
 
   async confirmPasswordReset(

@@ -1,5 +1,4 @@
-// src/conversations/conversations.module.ts
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { ChatService } from './conversations.service';
 import { ChatController } from './conversations.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -8,14 +7,16 @@ import { Message } from './entities/message.entity';
 import { ChatGateway } from './chat.gateway';
 import { User } from '../users/entities/user.entity';
 import { MinioModule } from '../common/integrations/minio/minio.module';
+import { AppointmentsModule } from '../appointments/appointments.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Conversation, Message, User]),
-    MinioModule
+    MinioModule,
+    forwardRef(() => AppointmentsModule)
   ],
   controllers: [ChatController],
   providers: [ChatService, ChatGateway],
-  exports: [ChatService] 
+  exports: [ChatService, ChatGateway]
 })
 export class ConversationsModule {}

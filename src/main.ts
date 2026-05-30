@@ -8,7 +8,7 @@ import { ConfigService } from '@nestjs/config';
 async function bootstrap() {
   const logger = new Logger('VetConnect-Main');
   const app = await NestFactory.create(AppModule);
-  const configService = app.get(ConfigService);
+  const configService = app.get(ConfigService   );
 
   // 1. EL PREFIJO VA PRIMERO
   const globalPrefix = 'api';
@@ -22,6 +22,13 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  app.enableCors({
+    origin: '*', 
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+    allowedHeaders: 'Content-Type, Accept, Authorization',
+  });
 
   // 3. CONFIGURACIÓN DE SWAGGER
   const config = new DocumentBuilder()

@@ -14,6 +14,7 @@ import { ApiBody, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User } from '../users/entities/user.entity';
 import { ReplyRatingDto } from './dto/reply-rating.dto';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('ratings')
 export class RatingsController {
@@ -61,6 +62,7 @@ export class RatingsController {
   }
 
   @Get('clinic/:clinicId')
+  @Public()
   @ApiOperation({
     summary: 'Ver valoraciones públicas de una clínica',
     description:

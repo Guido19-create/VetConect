@@ -8,6 +8,9 @@ import {
   HttpCode,
   Delete,
   Req,
+  Query,
+  Res,
+  Get,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -24,8 +27,8 @@ import {
 import { AuthService } from './auth.service';
 import { Public } from './decorators/public.decorator';
 import { LoginThrottlerGuard } from './guards/login-throttler.guard';
-import { VerifyOtpDto } from '../otp/dto/verify-otp.dto'; 
-import { GenerateOtpDto } from '../otp/dto/generate-otp.dto'; 
+import { VerifyOtpDto } from '../otp/dto/verify-otp.dto';
+import { GenerateOtpDto } from '../otp/dto/generate-otp.dto';
 import { RecoverRequestDto } from './dto/recover-request.dto';
 import { RecoverConfirmDto } from './dto/recover-confirm.dto';
 import { SocialLoginDto } from './dto/social-login.dto';
@@ -33,7 +36,7 @@ import { User } from '../users/entities/user.entity';
 import { GetUser } from './decorators/get-user.decorator';
 import { LinkAccountDto } from './dto/link-account.dto';
 import { OtpService } from '../otp/otp.service';
-import { LoginDto, LoginInitDto } from './dto/login.dto' ;
+import { LoginDto, LoginInitDto } from './dto/login.dto';
 import { VerifySecondFactorDto } from './dto/verify-second-factor.dto';
 import { RegisterVerifyDto } from './dto/register-verify.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
@@ -399,6 +402,36 @@ export class AuthController {
     return this.authService.requestPasswordRecovery(dto.email);
   }
 
+  @Public() 
+  @Get('redirect-recovery')
+  @ApiOperation({
+    summary: 'Redirección intermedia para el Deep Linking en desarrollo',
+  })
+  async redirectRecovery(@Query('token') token: string, @Res() res: any) {
+    const expoUrl = `${process.env.EXPO_URL_FORGOT_PASSWORD}${token}`;
+    res.send(`
+    <html>
+      <head>
+        <title>Redireccionando a VetConnect...</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          body { font-family: Arial, sans-serif; text-align: center; padding: 50px; color: #333; }
+          .btn { display: inline-block; padding: 12px 24px; background: #2b6777; color: white; text-decoration: none; border-radius: 25px; font-weight: bold; margin-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <h2>Abriendo VetConnect...</h2>
+        <p>Si la aplicación no se abre automáticamente, haz clic en el botón de abajo.</p>
+        <a class="btn" href="${expoUrl}">Abrir Aplicación</a>
+        <script>
+          // Intenta abrir Expo Go automáticamente al cargar la página
+          window.location.href = "${expoUrl}";
+        </script>
+      </body>
+    </html>
+  `);
+  }
+
   @Public()
   @Post('recover-confirm')
   @ApiOperation({
@@ -525,35 +558,39 @@ export class AuthController {
     };
   }
 
-
   @UseGuards(JwtAuthGuard)
   @Delete('delete-account')
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
-  @ApiOperation({ 
-    summary: 'Eliminar cuenta de usuario', 
-    description: 'Elimina permanentemente la cuenta del usuario autenticado. REQUIERE confirmación de contraseña. ADVERTENCIA: Esta acción es irreversible.' 
+  @ApiOperation({
+    summary: 'Eliminar cuenta de usuario',
+    description:
+      'Elimina permanentemente la cuenta del usuario autenticado. REQUIERE confirmación de contraseña. ADVERTENCIA: Esta acción es irreversible.',
   })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Cuenta eliminada exitosamente.' 
+  @ApiResponse({
+    status: 200,
+    description: 'Cuenta eliminada exitosamente.',
   })
-  @ApiResponse({ 
-    status: 401, 
-    description: 'Contraseña incorrecta o sesión inválida.' 
+  @ApiResponse({
+    status: 401,
+    description: 'Contraseña incorrecta o sesión inválida.',
   })
-  @ApiResponse({ 
-    status: 404, 
-    description: 'Usuario no encontrado.' 
+  @ApiResponse({
+    status: 404,
+    description: 'Usuario no encontrado.',
   })
-  @ApiResponse({ 
-    status: 400, 
-    description: 'El usuario no tiene contraseña configurada (cuenta social sin password).' 
+  @ApiResponse({
+    status: 400,
+    description:
+      'El usuario no tiene contraseña configurada (cuenta social sin password).',
   })
   async deleteAccount(
     @Req() req: any,
     @Body() deleteAccountDto: DeleteAccountDto,
   ) {
-    return await this.authService.deleteAccount(req.user.id, deleteAccountDto.password);
+    return await this.authService.deleteAccount(
+      req.user.id,
+      deleteAccountDto.password,
+    );
   }
 }

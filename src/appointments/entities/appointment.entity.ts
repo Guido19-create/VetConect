@@ -13,7 +13,7 @@ export class Appointment {
   @Column({ length: 255, default: 'scheduled' })
   states: string;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ type: 'text', nullable: true })
   reason: string;
 
   @Column({ name: 'clinicId' ,nullable: true})

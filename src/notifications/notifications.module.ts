@@ -8,9 +8,12 @@ import { TwilioStrategy } from './strategies/twilio.strategy';
 import { TemplateService } from './template.service';
 import { UsersModule } from '../users/users.module'; 
 import { EmailModule } from '../mail/mail.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Notification } from './entities/notification.entity';
 
 @Module({
   imports: [
+    TypeOrmModule.forFeature([Notification]),
     BullModule.registerQueue({
       name: 'notifications',
     }),
@@ -19,6 +22,6 @@ import { EmailModule } from '../mail/mail.module';
     forwardRef(() => UsersModule),
   ],
   providers: [NotificationsService, NotificationProcessor,TwilioStrategy,EmailStrategy,TemplateService],
-  exports: [NotificationsService,TemplateService],
+  exports: [NotificationsService,TemplateService, TypeOrmModule],
 })
 export class NotificationsModule {}
